@@ -4,17 +4,15 @@ import ps.mapreduce.impl.datastore.InputDataStore;
 import ps.mapreduce.impl.jobs.CombineJob;
 import ps.mapreduce.impl.jobs.Job;
 import ps.mapreduce.impl.jobs.MapJobWrapper;
-import ps.mapreduce.impl.jobs.ReduceJobWrapper;
 
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.LongAdder;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class Master implements Runnable {
+public class Master<MK, RV> implements Runnable {
 
     /*
             One of the copies of the program is special – the
@@ -49,12 +47,12 @@ public class Master implements Runnable {
     private final int workersCount;
 
     private final String inputLocation = "a";
-    private MapJob mapJob;
-    private ReduceJob reduceJob;
-    private CombineJob combineJob;
+    private MapJob<MK, RV> mapJob;
+    private ReduceJob<MK, RV> reduceJob;
+    private CombineJob<MK, RV> combineJob;
 
-    public Master(int workersCount, MapJob mapJob, ReduceJob reduceJob,
-                  ReduceJob combinerJob) {
+    public Master(int workersCount, MapJob<MK, RV> mapJob, ReduceJob<MK, RV> reduceJob,
+                  ReduceJob<MK, RV> combinerJob) {
         this.mapJob = mapJob;
         this.reduceJob = reduceJob;
         this.combineJob = combinerJob;
@@ -86,7 +84,7 @@ public class Master implements Runnable {
 
     @Override
     public void run() {
-        Worker worker = new Worker();
+        Worker<MK, RV> worker = new Worker<>();
 
 //        while(jobsWaiting()) {
 //            try {
@@ -138,22 +136,23 @@ public class Master implements Runnable {
 //                .collect(Collectors.<CompletableFuture<List>>toList());
 
 
-        List<CompletableFuture<List>> completableFutures = inputDataStore.fileNames("").
-                map(fileName -> CompletableFuture.supplyAsync(() -> (List) lulu(fileName, worker), workers)).
+        List<CompletableFuture<List<MK>>> completableFutures = inputDataStore.fileNames("").
+                map(fileName -> CompletableFuture.supplyAsync(() -> invokeMapTask(fileName, worker), workers)).
                 collect(Collectors.toList());
 
 
 //                .collect(Collectors.toList());
         CompletableFuture<Void> allFuturesResult = CompletableFuture.allOf(completableFutures.toArray(new CompletableFuture[completableFutures.size()]));
-        CompletableFuture<List<List>> allDone = allFuturesResult.thenApply(v ->
+        CompletableFuture<List<List<MK>>> allDone = allFuturesResult.thenApply(v ->
                 completableFutures.stream()
-                        .map(future -> future.join())
+                        .map(CompletableFuture::join)
                         .collect(Collectors.toList()));
+
 //        CompletableFuture<List> listCompletableFuture =
         CompletableFuture<Object> finalRes = allDone
                 .thenApply(results -> sortResults(results))
                 .thenApply(sorted -> sorted.stream()
-                        .map(key -> CompletableFuture.supplyAsync(() -> worker.reduceTask(reduceJob, (String) key), workers))
+                        .map(key -> CompletableFuture.supplyAsync(() -> worker.reduceTask(reduceJob, key), workers))
                         .collect(Collectors.toList()))
 
                 ;
@@ -175,22 +174,19 @@ public class Master implements Runnable {
 
     }
 
-    private List lulu(String fileName, Worker worker) {
-        MapJobWrapper mapJobWrapper = new MapJobWrapper(fileName, mapJob, combineJob);
-        List list = worker.mapTask((MapJob<String, Integer>) mapJobWrapper.getMapJob(),
-                mapJobWrapper.getFileName(), mapJobWrapper.getCombineJob());
-        return list;
+    private List<MK> invokeMapTask(String fileName, Worker<MK, RV> worker) {
+        MapJobWrapper<MK, RV> mapJobWrapper = new MapJobWrapper<>(fileName, mapJob, combineJob);
+        return worker.mapTask(mapJobWrapper.getMapJob(), mapJobWrapper.getFileName(), mapJobWrapper.getCombineJob());
     }
 
 
 
-    private List sortResults(List<List> results) {
+    private List<MK> sortResults(List<List<MK>> results) {
 
-        Object collect = results.stream()
-                .flatMap(e -> e.stream())
+        return results.stream()
+                .flatMap(Collection::stream)
                 .distinct()
                 .collect(Collectors.toList());
-        return (List) collect;
     }
 
     private boolean jobsWaiting() {

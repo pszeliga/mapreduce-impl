@@ -4,7 +4,7 @@ import ps.mapreduce.impl.ReduceJob;
 
 import java.util.List;
 
-public interface CombineJob<K, V> {
+public interface CombineJob<MK, RV> {
 
-    V reduce(K key, List<V> values);
+    RV reduce(MK key, List<RV> values);
 }

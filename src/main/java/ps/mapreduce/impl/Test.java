@@ -49,24 +49,24 @@ public class Test {
     }
 
 
-    public static class CountMap implements MapJob<String, Integer> {
-
-        @Override
-        public List<IntermediateResult<String, Integer>> map(String key, String value) {
-            return Arrays.stream(value.split(" "))
-                    .map(word -> new IntermediateResult<>(word, 1))
-                    .collect(toList());
-        }
-    }
-
-    public static class CountReduce implements ReduceJob<String, Integer> {
-
-        @Override
-        public Integer reduce(String key, List<Integer> values) {
-            return values.stream().reduce((a, b) -> a + b).orElse(0);
-        }
-
-    }
+//    public static class CountMap implements MapJob<String, Integer> {
+//
+//        @Override
+//        public List<IntermediateResult<String, Integer>> map(String key, String value) {
+//            return Arrays.stream(value.split(" "))
+//                    .map(word -> new IntermediateResult<>(word, 1))
+//                    .collect(toList());
+//        }
+//    }
+//
+//    public static class CountReduce implements ReduceJob<String, Integer> {
+//
+//        @Override
+//        public Integer reduce(String key, List<Integer> values) {
+//            return values.stream().reduce((a, b) -> a + b).orElse(0);
+//        }
+//
+//    }
 
 
 }

@@ -27,7 +27,7 @@ public class UserProgram {
         Class<Integer> outputValueClass = Integer.class;
 
 
-        new Master(numberOfWorkers, numberOfSplits, new CountMap(), new CountReduce(), new CountReduce()).run();
+        new Master(numberOfWorkers, new CountMap(), new CountReduce(), new CountReduce()).run();
 
 
     }

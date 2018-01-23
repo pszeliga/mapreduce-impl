@@ -4,12 +4,13 @@ import ps.mapreduce.impl.datastore.*;
 import ps.mapreduce.impl.jobs.CombineJob;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
 
-public class Worker {
+public class Worker<MK, RV> {
 
 
     private InputDataStore inputDataStore = new InputDataStore() {
@@ -26,7 +27,7 @@ public class Worker {
             return Stream.of("1", "2", "3");
         }
     };
-    IntermediateDataStore intermediateDataStore = new InMemoryIntermediateDataStore();
+    IntermediateDataStore<MK, RV> intermediateDataStore = new InMemoryIntermediateDataStore();
 
     /*
         A worker who is assigned a map task reads the
@@ -37,22 +38,23 @@ public class Worker {
         are buffered in memory
     */
 
-    public List<Object> mapTask(MapJob<String, Integer> mapJob, String key, CombineJob<String, Integer> combineJob) {
+    public List<MK> mapTask(MapJob<MK, RV> mapJob, String key, CombineJob<MK, RV> combineJob) {
         System.out.println("New map task for key: " + key);
-        Map<String, List<IntermediateResult<String, Integer>>> collect = inputDataStore.read(key)
+        return inputDataStore.read(key)
                 .flatMap(line -> mapJob.map(key, line).stream())
-                .collect(Collectors.groupingBy(IntermediateResult::getKey));
-        collect.replaceAll((k, v) -> Collections.singletonList(new IntermediateResult<>(k,
-                        combineJob.reduce(k, v.stream().map(IntermediateResult::getValue).collect(Collectors.toList())))));
-        return collect.values().stream()
-                .flatMap(e -> e.stream())
+                .collect(Collectors.groupingBy(IntermediateResult::getKey)).entrySet()
+                .stream()
+                .map(entry -> new IntermediateResult<>(entry.getKey(),
+                        combineJob.reduce(entry.getKey(), entry.getValue().stream().map(IntermediateResult::getValue).collect(toList()))))
                 .map(e -> intermediateDataStore.write(e))
                 .collect(Collectors.toList());
+
     }
 
-    public Object reduceTask(ReduceJob reduceJob, String location) {
-        List<IntermediateResult> data = (List<IntermediateResult>) intermediateDataStore.read(location);
-        return  new FinalResult<>(location,
-                reduceJob.reduce(location, data.stream().map(ir -> ir.getValue()).collect(toList())));
+    public FinalResult<MK, RV> reduceTask(ReduceJob<MK, RV> reduceJob, MK location) {
+        List<IntermediateResult<MK, RV>> data = intermediateDataStore.read(location.toString());
+        List<RV> value = data.stream().map(IntermediateResult::getValue).collect(toList());
+
+        return new FinalResult<>(location, reduceJob.reduce(location, value));
     }
 }
