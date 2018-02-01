@@ -1,38 +1,26 @@
-package ps.mapreduce.impl;
+package ps.mapreduce.impl.example;
 
-import ps.mapreduce.impl.datastore.IntermediateResult;
+import ps.mapreduce.impl.jobs.MapJob;
+import ps.mapreduce.impl.Master;
+import ps.mapreduce.impl.jobs.ReduceJob;
+import ps.mapreduce.impl.storage.IntermediateResult;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
-import java.util.Scanner;
 
 import static java.util.stream.Collectors.toList;
 
-public class UserProgram {
-
-    /*
-        The MapReduce library in the user program first
-    splits the input files into M pieces of typically 16
-    megabytes to 64 megabytes (MB) per piece (controllable
-    by the user via an optional parameter). It
-    then starts up many copies of the program on a cluster
-    of machines.
-     */
+public class WordCount {
 
     public static void main(String[] args) {
-        int numberOfSplits = 20;
-        int numberOfWorkers = 10;
-        Class<String> outputKeyClass = String.class;
-        Class<Integer> outputValueClass = Integer.class;
-
-
-        new Master(numberOfWorkers, new CountMap(), new CountReduce(), new CountReduce()).run();
-
-
+        int numberOfWorkers = Runtime.getRuntime().availableProcessors();
+        Master<String, Integer> master = new Master<>(numberOfWorkers,
+                new CountMap(),
+                new CountReduce(),
+                new CountReduce(),
+                System.out);
+        master.run();
     }
-
-
 
     public static class CountMap implements MapJob<String, Integer> {
 
@@ -51,7 +39,5 @@ public class UserProgram {
             return values.stream().reduce((a, b) -> a + b).orElse(0);
         }
     }
-
-
 
 }

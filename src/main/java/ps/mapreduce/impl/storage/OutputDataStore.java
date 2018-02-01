@@ -1,4 +1,4 @@
-package ps.mapreduce.impl.datastore;
+package ps.mapreduce.impl.storage;
 
 public interface OutputDataStore {
 

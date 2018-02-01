@@ -1,12 +1,12 @@
-package ps.mapreduce.impl.datastore;
+package ps.mapreduce.impl.storage;
 
-public class IntermediateResult<K, V> {
+public class FinalResult<K, V> {
 
     private final K key;
 
     private final V value;
 
-    public IntermediateResult(K key, V value) {
+    public FinalResult(K key, V value) {
         this.key = key;
         this.value = value;
     }
@@ -21,9 +21,6 @@ public class IntermediateResult<K, V> {
 
     @Override
     public String toString() {
-        return "IntermediateResult{" +
-                "key=" + key +
-                ", value=" + value +
-                '}';
+        return key + " - " + value;
     }
 }
