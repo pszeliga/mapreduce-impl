@@ -10,6 +10,9 @@ import java.util.List;
 
 import static java.util.stream.Collectors.toList;
 
+/*
+    Counts the occurrences of each word in all files
+ */
 public class WordCount {
 
     public static void main(String[] args) {

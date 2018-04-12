@@ -11,7 +11,7 @@ public class InMemoryDataStore<K, V> implements DataStore<K, V> {
     private final Map<K, List<IntermediateResult<K, V>>> intermediateResults = new ConcurrentHashMap<>();
 
     public InMemoryDataStore() {
-        files.put("file1.txt", "This is the first file \ncontent. ");
+        files.put("file1.txt", "This is the first file ( first forward file ) \ncontent. ");
         files.put("file2.txt", "And this is the second file content. ");
         files.put("file3.txt", "More text in \nthird file");
         files.put("file4.txt", "And some random text here");

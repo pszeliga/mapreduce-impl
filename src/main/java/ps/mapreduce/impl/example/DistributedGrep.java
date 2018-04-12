@@ -8,6 +8,9 @@ import ps.mapreduce.impl.storage.IntermediateResult;
 import java.util.Collections;
 import java.util.List;
 
+/*
+    Finds lines which contain provided pattern
+ */
 public class DistributedGrep {
 
     public static void main(String[] args) {
